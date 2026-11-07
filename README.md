@@ -72,9 +72,9 @@ The simulation is also honest about the limits, and you should be too. A doubt g
 
 ### See it in action
 
-[![DoubtBot To The Rescue: click to watch the 48-second video](media/doubtbot-to-the-rescue-poster.png)](media/doubtbot-to-the-rescue.mp4)
+**[▶ Watch DoubtBot To The Rescue live in your browser](https://claude.ai/artifact/7wgtZU64DBwPAqWskEjuE3)** (interactive: pause, replay, jump between scenes, scroll the whole #swarm-ops chat)
 
-**[Watch DoubtBot To The Rescue (48 s, MP4)](media/doubtbot-to-the-rescue.mp4)**
+**[Or download the video (45 s, MP4)](media/doubtbot-to-the-rescue.mp4)**
 
 [`doubtbot-saves-the-repo.html`](doubtbot-saves-the-repo.html) is **DoubtBot To The Rescue**, an animated short:
 
