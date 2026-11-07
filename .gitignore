@@ -1,0 +1,9 @@
+# DoubtBot keeps secrets in ~/.config/doubtbot, but just in case
+credentials.json
+state.json
+comments.log
+.env
+__pycache__/
+*.pyc
+.venv/
+desktop.ini

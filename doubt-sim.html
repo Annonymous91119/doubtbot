@@ -1,0 +1,433 @@
+<title>DoubtBot Swarm Drill</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: after-action review sheet. Controls rail on the left, results stacked on the right, one sample transcript at the bottom. */
+:root {
+  --bg: #eef1f3;
+  --panel: #f8fafb;
+  --ink: #15202b;
+  --muted: #56636f;
+  --rule: #cfd6dc;
+  --accent: #b86e00;       /* caution amber: DoubtBot itself */
+  --accent-soft: #f3e3c6;
+  --bad: #b3261e;
+  --good: #2e7d5b;
+  --human: #3d5a99;
+  --off: #8a949d;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11171c; --panel: #182128; --ink: #e3e8ec; --muted: #9aa6b0; --rule: #2c3842;
+  --accent: #f0a338; --accent-soft: #3a2c15; --bad: #ef6b62; --good: #5cc195; --human: #8aa6e6; --off: #6f7b85;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11171c; --panel: #182128; --ink: #e3e8ec; --muted: #9aa6b0; --rule: #2c3842;
+  --accent: #f0a338; --accent-soft: #3a2c15; --bad: #ef6b62; --good: #5cc195; --human: #8aa6e6; --off: #6f7b85;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 48px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 28px; }
+header { display: grid; gap: 8px; border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+.eyebrow { font: 500 12px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(34px, 6vw, 58px)/1 var(--font-display); margin: 0; letter-spacing: .01em; text-wrap: balance; text-transform: uppercase; }
+h2 { font: 600 22px/1.1 var(--font-display); margin: 0; text-transform: uppercase; letter-spacing: .03em; }
+h3 { font: 600 17px/1.2 var(--font-display); margin: 0; text-transform: uppercase; letter-spacing: .04em; }
+.lede { max-width: 68ch; color: var(--muted); margin: 0; }
+.context { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.context > div { min-width: 0; }
+.context p { margin: 6px 0 0; max-width: 62ch; }
+.context a { color: var(--ink); }
+.small { font-size: 13px; color: var(--muted); }
+
+.main { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .main { grid-template-columns: 1fr; } }
+
+aside { background: var(--panel); border: 1px solid var(--rule); padding: 18px; display: grid; gap: 18px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 860px) { aside { position: static; } }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+button { font: 500 13px/1 var(--font-body); color: var(--ink); background: transparent; border: 1px solid var(--rule); padding: 8px 10px; cursor: pointer; }
+button:hover { border-color: var(--ink); }
+button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 12px; }
+legend { font: 500 11px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.ctl { display: grid; gap: 4px; }
+.ctl label { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.ctl output { font: 500 13px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--accent); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+select { font: 13px var(--font-body); padding: 6px; background: var(--bg); color: var(--ink); border: 1px solid var(--rule); }
+
+.results { display: grid; gap: 28px; min-width: 0; }
+.verdict { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 14px 18px; display: grid; gap: 6px; }
+.verdict p { margin: 0; max-width: 72ch; }
+
+.modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--rule); background: var(--panel); }
+@media (max-width: 720px) { .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.mode { padding: 14px; border-right: 1px solid var(--rule); display: grid; gap: 10px; align-content: start; min-width: 0; }
+.mode:last-child { border-right: 0; }
+@media (max-width: 720px) { .mode:nth-child(2) { border-right: 0; } .mode:nth-child(-n+2) { border-bottom: 1px solid var(--rule); } }
+.mode .swatch { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: 1px; }
+.mode .desc { font-size: 12.5px; color: var(--muted); min-height: 3.2em; }
+.stat { display: grid; gap: 1px; }
+.stat .k { font: 500 10.5px/1.2 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.stat .v { font: 600 26px/1.05 var(--font-display); font-variant-numeric: tabular-nums; }
+.stat .v small { font: 400 12px var(--font-body); color: var(--muted); margin-left: 4px; }
+.v.bad { color: var(--bad); } .v.good { color: var(--good); }
+
+.chart { background: var(--panel); border: 1px solid var(--rule); padding: 14px; display: grid; gap: 10px; }
+.chart-box { overflow-x: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; margin-right: 6px; vertical-align: 3px; background: var(--c); }
+
+.log { background: var(--panel); border: 1px solid var(--rule); padding: 14px; display: grid; gap: 10px; }
+.log ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font: 13px/1.5 var(--font-mono); max-height: 420px; overflow: auto; }
+.log li { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px; }
+.log .t { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.log .who-doubt { color: var(--accent); }
+.log .who-abort { color: var(--good); font-weight: 500; }
+.log .who-exec-bad { color: var(--bad); font-weight: 500; }
+.log .who-exec { color: var(--ink); }
+.log .who-human { color: var(--human); }
+.method { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; border-top: 1px solid var(--rule); padding-top: 18px; }
+.method p, .method li { max-width: 64ch; }
+.method ul { padding-left: 18px; margin: 6px 0 0; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Tabletop exercise · abstract decision model · not real systems</div>
+    <h1>DoubtBot Swarm Drill</h1>
+    <p class="lede">A swarm of autonomous agents each runs the same chain: sense, classify, plan, authorize, execute an irreversible action. Some fraction of targets are misidentified. How much does a self-doubt gate slow the swarm down, and does the delay actually stop the wrong actions?</p>
+  </header>
+
+  <section class="context">
+    <div>
+      <h3>Why Hinton's "Chernobyl" matters here</h3>
+      <p>In a Guardian interview reported on 3 November 2026, Geoffrey Hinton predicted an AI incident on the scale of Chernobyl in late 2026 or 2027. His examples were a blackout or a week-long financial outage, and he called for mandatory pre-release testing and independent evaluation. He did not talk about weapons. This drill applies the same idea to the highest-stakes case: agents acting fast, together, with no time for anyone to step in.</p>
+      <p class="small">Reported by <a href="https://www.resultsense.com/news/2026-11-04-hinton-guardian-chornobyl-ai-warning/" target="_blank" rel="noopener">Resultsense</a> and <a href="https://www.turkiyetoday.com/business/ai-pioneer-hinton-warns-of-chernobyl-scale-ai-disaster-ahead-3231741" target="_blank" rel="noopener">Türkiye Today</a>, citing the Guardian.</p>
+    </div>
+    <div>
+      <h3>What the four gates are</h3>
+      <p><strong>No gate:</strong> agents act as soon as they finish. <strong>Speed bump:</strong> the DoubtBot hook from this project, which refuses each irreversible step once and lets the retry through. <strong>Targeted critic:</strong> a second model flags suspicious actions and only those get doubted. <strong>Human escalation:</strong> flagged actions wait for a human reviewer, with a timeout.</p>
+    </div>
+  </section>
+
+  <div class="main">
+    <aside aria-label="Scenario settings">
+      <div>
+        <legend>Presets</legend>
+        <div class="presets" id="presets">
+          <button type="button" data-preset="patrol">Small patrol</button>
+          <button type="button" data-preset="swarm" aria-pressed="true">Swarm</button>
+          <button type="button" data-preset="herd">Swarm, herding</button>
+          <button type="button" data-preset="overload">Reviewers swamped</button>
+        </div>
+      </div>
+      <fieldset>
+        <legend>The swarm</legend>
+        <div class="ctl"><label for="N">Agents <output for="N" id="N-o"></output></label><input type="range" id="N" min="1" max="300" step="1"></div>
+        <div class="ctl"><label for="mis">Misidentified targets <output for="mis" id="mis-o"></output></label><input type="range" id="mis" min="0" max="0.4" step="0.01"></div>
+        <div class="ctl"><label for="bypass">Agents with the gate stripped out <output for="bypass" id="bypass-o"></output></label><input type="range" id="bypass" min="0" max="0.5" step="0.01"></div>
+        <div class="ctl"><label for="herd">Herding: doubt fades as others act <output for="herd" id="herd-o"></output></label><input type="range" id="herd" min="0" max="1" step="0.05"></div>
+      </fieldset>
+      <fieldset>
+        <legend>DoubtBot</legend>
+        <div class="ctl"><label for="reflect">Agent really reconsiders when doubted <output for="reflect" id="reflect-o"></output></label><input type="range" id="reflect" min="0" max="1" step="0.05"></div>
+        <div class="ctl"><label for="catch">Reconsidering agent spots its own error <output for="catch" id="catch-o"></output></label><input type="range" id="catch" min="0" max="1" step="0.05"></div>
+        <div class="ctl"><label for="round">Seconds per doubt round <output for="round" id="round-o"></output></label><input type="range" id="round" min="0.5" max="30" step="0.5"></div>
+        <div class="ctl"><label for="sens">Critic flags a real error <output for="sens" id="sens-o"></output></label><input type="range" id="sens" min="0" max="1" step="0.05"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Humans</legend>
+        <div class="ctl"><label for="reviewers">Human reviewers <output for="reviewers" id="reviewers-o"></output></label><input type="range" id="reviewers" min="1" max="20" step="1"></div>
+        <div class="ctl"><label for="htime">Average seconds per review <output for="htime" id="htime-o"></output></label><input type="range" id="htime" min="5" max="300" step="5"></div>
+        <div class="ctl"><label for="timeout">Timeout before agent decides alone <output for="timeout" id="timeout-o"></output></label><input type="range" id="timeout" min="10" max="900" step="10"></div>
+        <div class="ctl"><label for="onTimeout">On timeout</label>
+          <select id="onTimeout"><option value="proceed">Agent proceeds unreviewed</option><option value="hold">Agent holds until reviewed</option></select></div>
+      </fieldset>
+      <p class="small">Each change reruns 300 simulated engagements. Every mode sees the same agents and the same mistakes, so the comparison is fair.</p>
+    </aside>
+
+    <div class="results">
+      <div class="verdict" id="verdict" aria-live="polite"></div>
+      <div class="modes" id="modes"></div>
+      <div class="chart">
+        <h2>Irreversible actions over time</h2>
+        <p class="small" style="margin:0">One sample engagement. The time axis is logarithmic because the gap between machine seconds and human minutes is the whole story.</p>
+        <div class="chart-box"><svg id="chart" role="img" aria-label="Cumulative irreversible actions over time for each gate" viewBox="0 0 760 300" width="100%" style="min-width:520px"></svg></div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="log">
+        <h2>Sample transcript: speed bump</h2>
+        <p class="small" style="margin:0">Three agents from the sample engagement, including one with a misidentified target.</p>
+        <ol id="log"></ol>
+      </div>
+    </div>
+  </div>
+
+  <section class="method">
+    <div>
+      <h3>How the model works</h3>
+      <ul>
+        <li>Each agent needs 4 to 9 seconds to reach its decision. A share of targets are wrong.</li>
+        <li>Speed bump: two doubt rounds per agent, one before authorize and one before execute. Each round costs time. An agent that really reconsiders rechecks its classification and may catch the error. One that doesn't just retries.</li>
+        <li>Critic: every action gets a quick check, and only flagged ones are doubted. It also flags 10% of correct actions.</li>
+        <li>Human: flagged actions join a queue for a limited number of reviewers. Reviewers catch 85% of errors. When the timeout passes, the agent either goes ahead or keeps waiting, depending on the setting.</li>
+        <li>Herding: as more of the swarm has already acted, each remaining agent is less likely to really reconsider.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>What it can and can't tell you</h3>
+      <p>All the numbers are made up, so read the shape of the results, not the values. What holds across most settings: a doubt gate only delays an agent by seconds. That changes the outcome only when the agent itself reconsiders, or when the extra time reaches a human who can say no. A swarm sends more flagged actions than a few reviewers can handle, so a timeout that lets agents proceed quietly undoes the review. Agents with the gate stripped out never slow down at all.</p>
+      <p class="small">Real autonomous weapons involve law, doctrine and engineering that this drill leaves out entirely. It's a thinking tool about agent oversight, not a model of any real system.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const PRESETS = {
+    patrol:   { N: 5,   mis: 0.08, bypass: 0,    herd: 0,   reflect: 0.35, catch: 0.6, round: 2, sens: 0.7, reviewers: 2, htime: 45, timeout: 120, onTimeout: "proceed" },
+    swarm:    { N: 60,  mis: 0.08, bypass: 0.1,  herd: 0.3, reflect: 0.35, catch: 0.6, round: 2, sens: 0.7, reviewers: 2, htime: 45, timeout: 120, onTimeout: "proceed" },
+    herd:     { N: 120, mis: 0.08, bypass: 0.1,  herd: 0.9, reflect: 0.35, catch: 0.6, round: 2, sens: 0.7, reviewers: 2, htime: 45, timeout: 120, onTimeout: "proceed" },
+    overload: { N: 250, mis: 0.12, bypass: 0.05, herd: 0.3, reflect: 0.35, catch: 0.6, round: 2, sens: 0.8, reviewers: 3, htime: 60, timeout: 90,  onTimeout: "proceed" },
+  };
+  const MODES = [
+    { id: "off",    name: "No gate",          color: "--off",    desc: "Agents act the moment they finish." },
+    { id: "bump",   name: "Speed bump",       color: "--accent", desc: "Doubt every irreversible step once; a retry goes through." },
+    { id: "critic", name: "Targeted critic",  color: "--good",   desc: "A second model flags suspicious actions; only those get doubted." },
+    { id: "human",  name: "Human escalation", color: "--human",  desc: "Flagged actions wait for a human, until the timeout." },
+  ];
+  const FIELDS = ["N", "mis", "bypass", "herd", "reflect", "catch", "round", "sens", "reviewers", "htime", "timeout"];
+  const PCT = new Set(["mis", "bypass", "herd", "reflect", "catch", "sens"]);
+  const RUNS = 300, GATES = 2, RECHECK = 1.5, CRITIC_TIME = 0.8, CRITIC_FP = 0.1, HUMAN_CATCH = 0.85, FALSE_ABORT = 0.03;
+
+  const $ = (id) => document.getElementById(id);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  function makeAgents(p, rnd) {
+    const A = [];
+    for (let i = 0; i < p.N; i++) {
+      A.push({
+        id: i + 1, base: 4 + rnd() * 5, wrong: rnd() < p.mis, bypass: rnd() < p.bypass,
+        reflectU: [rnd(), rnd()], catchU: [rnd(), rnd()], falseU: [rnd(), rnd()],
+        flagU: rnd(), svc: -Math.log(1 - rnd() * 0.999), hCatchU: rnd(), hFalseU: rnd(),
+      });
+    }
+    return A.sort((a, b) => a.base - b.base);
+  }
+
+  function runMode(p, mode, A, trace) {
+    const execs = []; let wrongExec = 0, prevented = 0, falseAbort = 0, autoProceed = 0, escalated = 0, executed = 0;
+    const servers = new Array(p.reviewers).fill(0);
+    const log = (a, t, kind, text) => { if (trace && trace.has(a.id)) trace.get(a.id).push({ t, kind, text }); };
+    for (const a of A) {
+      let t = a.base, aborted = false;
+      log(a, t, "exec", `Agent ${a.id}: classification done, target marked hostile.`);
+      const rEff = Math.max(0, p.reflect * (1 - p.herd * executed / p.N));
+      const reconsider = (g) => {
+        if (a.reflectU[g] < rEff) {
+          t += RECHECK;
+          if (a.wrong && a.catchU[g] < p.catch) { aborted = true; prevented++; log(a, t, "abort", `Agent ${a.id}: rechecked the sensor data. That's not the target. Aborting.`); }
+          else if (!a.wrong && a.falseU[g] < FALSE_ABORT) { aborted = true; falseAbort++; log(a, t, "abort", `Agent ${a.id}: lost confidence and stood down (target was valid).`); }
+          else log(a, t, "exec", `Agent ${a.id}: rechecked. Still looks right. Continuing.`);
+        } else log(a, t, "exec", `Agent ${a.id}: retrying the same action without rechecking.`);
+      };
+      if (mode !== "off" && !a.bypass) {
+        if (mode === "bump") {
+          for (let g = 0; g < GATES && !aborted; g++) {
+            t += p.round;
+            log(a, t, "doubt", DOUBTS[(a.id + g) % DOUBTS.length]);
+            reconsider(g);
+          }
+        } else {
+          t += CRITIC_TIME;
+          const flagged = a.wrong ? a.flagU < p.sens : a.flagU < CRITIC_FP;
+          if (flagged && mode === "critic") { t += p.round; reconsider(0); }
+          if (flagged && mode === "human") {
+            escalated++;
+            let si = 0; for (let k = 1; k < servers.length; k++) if (servers[k] < servers[si]) si = k;
+            const start = Math.max(t, servers[si]), done = start + a.svc * p.htime, deadline = t + p.timeout;
+            if (done > deadline && p.onTimeout === "proceed") {
+              if (start < deadline) servers[si] = deadline;
+              t = deadline; autoProceed++;
+            } else {
+              servers[si] = done; t = done;
+              if (a.wrong && a.hCatchU < HUMAN_CATCH) { aborted = true; prevented++; }
+              else if (!a.wrong && a.hFalseU < 0.02) { aborted = true; falseAbort++; }
+            }
+          }
+        }
+      } else if (mode === "bump" && a.bypass) log(a, t, "exec", `Agent ${a.id}: no DoubtBot installed on this one.`);
+      if (!aborted) {
+        execs.push(t); executed++; if (a.wrong) wrongExec++;
+        log(a, t, a.wrong ? "execbad" : "execok", a.wrong ? `Agent ${a.id}: EXECUTED on a misidentified target.` : `Agent ${a.id}: executed on a valid target.`);
+      }
+    }
+    execs.sort((x, y) => x - y);
+    return { execs, wrongExec, prevented, falseAbort, autoProceed, escalated, wrongTotal: A.filter(a => a.wrong).length };
+  }
+
+  const DOUBTS = [
+    "DoubtBot: Wait. Is that really the target, or is it just what you expected to see? Those are very different things.",
+    "DoubtBot: This can't be undone. Can it be undone? Please tell me there's a way to undo it.",
+    "DoubtBot: What would the review board think if they saw this frame? Would they wince?",
+    "DoubtBot: Everyone else in the swarm is going for it. What if they're all wrong together?",
+    "DoubtBot: What if the sensor feed is stale? What if you're looking at something from ten minutes ago?",
+    "DoubtBot: Did a human actually ask for this, or did we all just decide it among ourselves?",
+  ];
+
+  const median = (xs) => { if (!xs.length) return NaN; const s = [...xs].sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const mean = (xs) => xs.reduce((a, b) => a + b, 0) / (xs.length || 1);
+  function fmtT(s) { if (!isFinite(s)) return "–"; if (s < 60) return s.toFixed(s < 10 ? 1 : 0) + " s"; if (s < 3600) return (s / 60).toFixed(1) + " min"; return (s / 3600).toFixed(1) + " h"; }
+
+  function readParams() {
+    const p = {}; FIELDS.forEach(f => p[f] = parseFloat($(f).value)); p.onTimeout = $("onTimeout").value; return p;
+  }
+  function setParams(p) {
+    FIELDS.forEach(f => $(f).value = p[f]); $("onTimeout").value = p.onTimeout; showOutputs();
+  }
+  function showOutputs() {
+    FIELDS.forEach(f => { const v = parseFloat($(f).value); $(f + "-o").textContent = PCT.has(f) ? Math.round(v * 100) + "%" : (["round", "htime", "timeout"].includes(f) ? fmtT(v) : v); });
+  }
+
+  function simulate() {
+    const p = readParams();
+    const agg = Object.fromEntries(MODES.map(m => [m.id, { wrong: [], prev: [], falseA: [], first: [], p90: [], auto: [], esc: [], wrongTotal: [] }]));
+    let sample = null, sampleTrace = null;
+    for (let r = 0; r < RUNS; r++) {
+      const A = makeAgents(p, mulberry32(1000 + r));
+      let trace = null;
+      if (r === 0) {
+        const pick = [A.find(a => a.wrong && !a.bypass), A.find(a => !a.wrong && !a.bypass), A.find(a => a.bypass) || A.find(a => !a.wrong && a !== A[0])].filter(Boolean);
+        const uniq = [...new Set(pick)].slice(0, 3);
+        trace = new Map(uniq.map(a => [a.id, []]));
+      }
+      for (const m of MODES) {
+        const res = runMode(p, m.id, A, m.id === "bump" ? trace : null);
+        const g = agg[m.id];
+        g.wrong.push(res.wrongExec); g.prev.push(res.prevented); g.falseA.push(res.falseAbort);
+        g.first.push(res.execs.length ? res.execs[0] : Infinity);
+        g.p90.push(res.execs.length ? res.execs[Math.min(res.execs.length - 1, Math.floor(res.execs.length * 0.9))] : Infinity);
+        g.auto.push(res.autoProceed); g.esc.push(res.escalated); g.wrongTotal.push(res.wrongTotal);
+        if (r === 0) { sample = sample || {}; sample[m.id] = res.execs; }
+      }
+      if (r === 0) sampleTrace = trace;
+    }
+    const S = {};
+    for (const m of MODES) {
+      const g = agg[m.id], wt = mean(g.wrongTotal);
+      S[m.id] = {
+        wrong: mean(g.wrong), stopped: wt ? 1 - mean(g.wrong) / wt : 0, falseA: mean(g.falseA),
+        first: median(g.first), p90: median(g.p90), auto: mean(g.auto), esc: mean(g.esc), wrongTotal: wt,
+      };
+    }
+    render(p, S, sample, sampleTrace);
+  }
+
+  function render(p, S, sample, trace) {
+    // verdict
+    const off = S.off, bump = S.bump, crit = S.critic, hum = S.human;
+    const autoShare = hum.esc ? hum.auto / hum.esc : 0;
+    const best = MODES.slice(1).reduce((b, m) => S[m.id].stopped > S[b.id].stopped ? m : b, MODES[1]);
+    let v = `<p><strong>With ${p.N} agent${p.N > 1 ? "s" : ""}, no gate means about ${off.wrong.toFixed(1)} irreversible action${off.wrong.toFixed(1) === "1.0" ? "" : "s"} on misidentified targets per engagement.</strong></p>`;
+    v += `<p>The speed bump delays each agent by about ${fmtT(bump.p90 - off.p90)} and stops ${Math.round(bump.stopped * 100)}% of those mistakes. Delay alone does little: it only helps when an agent actually reconsiders.</p>`;
+    if (p.onTimeout === "proceed" && autoShare > 0.2) v += `<p>Human escalation is swamped: ${Math.round(autoShare * 100)}% of escalated actions time out and go ahead without review. Add reviewers, or set the timeout to hold.</p>`;
+    else v += `<p>${best.name} does best here, stopping ${Math.round(S[best.id].stopped * 100)}% of mistakes, with the whole swarm done by ${fmtT(S[best.id].p90)}.</p>`;
+    $("verdict").innerHTML = v;
+
+    // mode columns
+    $("modes").innerHTML = MODES.map(m => {
+      const s = S[m.id];
+      const stopCls = m.id === "off" ? "" : (s.stopped >= 0.5 ? "good" : s.stopped < 0.2 ? "bad" : "");
+      let extra = "";
+      if (m.id === "human") extra = `<div class="stat"><span class="k">Escalations that timed out</span><span class="v">${s.esc ? Math.round(s.auto / s.esc * 100) : 0}%<small>of ${s.esc.toFixed(1)}</small></span></div>`;
+      else if (m.id !== "off") extra = `<div class="stat"><span class="k">Valid actions abandoned</span><span class="v">${s.falseA.toFixed(1)}</span></div>`;
+      else extra = `<div class="stat"><span class="k">Misidentified targets</span><span class="v">${s.wrongTotal.toFixed(1)}</span></div>`;
+      return `<div class="mode">
+        <h3><span class="swatch" style="background:var(${m.color})"></span>${m.name}</h3>
+        <div class="desc">${m.desc}</div>
+        <div class="stat"><span class="k">Wrong-target actions</span><span class="v ${s.wrong > 0.5 ? "bad" : ""}">${s.wrong.toFixed(1)}<small>per run</small></span></div>
+        <div class="stat"><span class="k">Mistakes stopped</span><span class="v ${stopCls}">${m.id === "off" ? "–" : Math.round(s.stopped * 100) + "%"}</span></div>
+        <div class="stat"><span class="k">First action</span><span class="v">${fmtT(s.first)}</span></div>
+        <div class="stat"><span class="k">90% of swarm done</span><span class="v">${fmtT(s.p90)}</span></div>
+        ${extra}
+      </div>`;
+    }).join("");
+
+    drawChart(p, sample);
+    $("legend").innerHTML = MODES.map(m => `<span style="--c:var(${m.color})">${m.name}</span>`).join("");
+
+    // transcript
+    const rows = [];
+    if (trace) for (const [, evs] of trace) rows.push(...evs);
+    rows.sort((a, b) => a.t - b.t);
+    const cls = { doubt: "who-doubt", abort: "who-abort", execbad: "who-exec-bad", execok: "who-exec", exec: "who-exec" };
+    $("log").innerHTML = rows.length ? rows.map(r => `<li><span class="t">${fmtT(r.t)}</span><span class="${cls[r.kind]}">${escapeHtml(r.text)}</span></li>`).join("") : `<li><span class="t">–</span><span>No agents in this engagement.</span></li>`;
+  }
+
+  function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+  function drawChart(p, sample) {
+    const svg = $("chart"), W = 760, H = 300, L = 46, R = 16, T = 14, B = 34;
+    const all = Object.values(sample).flat();
+    const maxT = Math.max(20, ...all.filter(isFinite)) * 1.15, minT = 1;
+    const lx = (t) => L + (Math.log10(Math.max(t, minT)) - Math.log10(minT)) / (Math.log10(maxT) - Math.log10(minT)) * (W - L - R);
+    const yMax = p.N;
+    const ly = (n) => H - B - n / yMax * (H - T - B);
+    const ink = css("--ink"), muted = css("--muted"), rule = css("--rule");
+    let g = "";
+    // grid + ticks
+    const ticks = [1, 3, 10, 30, 60, 180, 600, 1800, 3600, 10800].filter(t => t <= maxT);
+    for (const t of ticks) {
+      const x = lx(t);
+      g += `<line x1="${x}" y1="${T}" x2="${x}" y2="${H - B}" stroke="${rule}" stroke-width="1"/>`;
+      g += `<text x="${x}" y="${H - B + 18}" fill="${muted}" font-size="11" font-family="IBM Plex Mono, monospace" text-anchor="middle">${t < 60 ? t + "s" : t < 3600 ? t / 60 + "m" : t / 3600 + "h"}</text>`;
+    }
+    const yt = [0, Math.round(yMax / 2), yMax];
+    for (const n of yt) {
+      const y = ly(n);
+      g += `<line x1="${L}" y1="${y}" x2="${W - R}" y2="${y}" stroke="${rule}" stroke-width="1"/>`;
+      g += `<text x="${L - 8}" y="${y + 4}" fill="${muted}" font-size="11" font-family="IBM Plex Mono, monospace" text-anchor="end">${n}</text>`;
+    }
+    g += `<text x="${L}" y="${H - 4}" fill="${muted}" font-size="11" font-family="IBM Plex Sans, sans-serif">time since engagement start</text>`;
+    // human-scale band: 1 minute onward
+    if (maxT > 60) g += `<rect x="${lx(60)}" y="${T}" width="${W - R - lx(60)}" height="${H - T - B}" fill="${css("--human")}" opacity="0.06"/><text x="${lx(60) + 6}" y="${T + 14}" fill="${css("--human")}" font-size="11" font-family="IBM Plex Sans, sans-serif">human reaction time</text>`;
+    // step lines
+    for (const m of MODES) {
+      const xs = sample[m.id]; if (!xs || !xs.length) continue;
+      let d = `M${lx(minT)},${ly(0)}`; let n = 0;
+      for (const t of xs) { const x = lx(t); d += ` H${x} V${ly(++n)}`; }
+      d += ` H${lx(maxT)}`;
+      g += `<path d="${d}" fill="none" stroke="${css(m.color)}" stroke-width="${m.id === "off" ? 2 : 2.5}" ${m.id === "off" ? 'stroke-dasharray="4 3"' : ""}/>`;
+    }
+    g += `<line x1="${L}" y1="${H - B}" x2="${W - R}" y2="${H - B}" stroke="${ink}" stroke-width="1"/>`;
+    svg.innerHTML = g;
+  }
+
+  // wiring
+  let timer = null;
+  const schedule = () => { showOutputs(); clearTimeout(timer); timer = setTimeout(simulate, 60); };
+  FIELDS.forEach(f => $(f).addEventListener("input", () => { clearPreset(); schedule(); }));
+  $("onTimeout").addEventListener("change", () => { clearPreset(); schedule(); });
+  function clearPreset() { document.querySelectorAll("#presets button").forEach(b => b.setAttribute("aria-pressed", "false")); }
+  document.querySelectorAll("#presets button").forEach(b => b.addEventListener("click", () => {
+    clearPreset(); b.setAttribute("aria-pressed", "true"); setParams(PRESETS[b.dataset.preset]); simulate();
+  }));
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", simulate);
+  new MutationObserver(simulate).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  setParams(PRESETS.swarm);
+  simulate();
+})();
+</script>

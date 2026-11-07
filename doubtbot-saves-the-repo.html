@@ -1,0 +1,435 @@
+<title>DoubtBot To The Rescue</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one cinematic night-skyline stage (a city of source files), HUD strip above, scene rail and the swarm's chat channel below.
+   One deliberate night look, so no light theme. */
+:root {
+  --night: #0a0f1f;
+  --panel: #111a30;
+  --panel-2: #18233f;
+  --ink: #eaf0fb;
+  --muted: #93a0bd;
+  --rule: #27324f;
+  --gold: #ffc53d;
+  --cape: #e5344f;
+  --swarm: #ff5f6d;
+  --code: #79d4ff;
+  --f-hero: "Bungee", Impact, "Arial Black", sans-serif;
+  --f-head: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--night); color: var(--ink); font: 15px/1.55 var(--f-body); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 16px; }
+header { display: grid; gap: 8px; }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+h1 { font: 400 clamp(30px, 6.4vw, 62px)/1 var(--f-hero); margin: 0; text-wrap: balance; }
+h1 span { color: var(--gold); }
+.lede { margin: 0; color: var(--muted); max-width: 66ch; }
+.hud { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+.chip { background: var(--panel); padding: 10px 14px 12px; display: grid; gap: 5px; min-width: 0; }
+.chip .k { font: 500 10.5px/1.2 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.chip .v { font: 700 30px/1 var(--f-head); font-variant-numeric: tabular-nums; }
+.chip .s { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar { height: 4px; background: var(--rule); }
+.bar i { display: block; height: 100%; width: 0; background: currentColor; }
+#c1 { color: var(--code); } #c2 { color: var(--swarm); } #c3 { color: var(--gold); }
+.stage { border: 1px solid var(--rule); background: #05080f; }
+canvas { display: block; width: 100%; height: auto; aspect-ratio: 1000 / 560; max-width: 100%; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.controls .btns { display: flex; gap: 8px; }
+.clock { font: 500 13px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+button { font: 600 15px/1 var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: var(--ink);
+  background: var(--panel); border: 1px solid var(--rule); padding: 9px 16px; cursor: pointer; }
+button:hover { border-color: var(--gold); }
+button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+button.primary { background: var(--gold); color: #1d1300; border-color: var(--gold); }
+.scenes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--rule); }
+.scenes button { border: 0; border-right: 1px solid var(--rule); text-align: left; display: grid; gap: 5px;
+  padding: 11px 12px; min-width: 0; text-transform: none; letter-spacing: 0; }
+.scenes button:last-child { border-right: 0; }
+.scenes .n { font: 500 11px/1 var(--f-mono); color: var(--muted); letter-spacing: .06em; }
+.scenes .l { font: 600 16px/1.1 var(--f-head); text-transform: uppercase; letter-spacing: .04em; }
+.scenes button[aria-current="step"] { background: var(--panel-2); box-shadow: inset 0 -3px 0 var(--gold); }
+.scenes button[aria-current="step"] .n { color: var(--gold); }
+@media (max-width: 680px) {
+  .scenes { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(124px, 1fr); overflow-x: auto; }
+  .chip .v { font-size: 24px; }
+  .chip { padding: 8px 10px 10px; }
+}
+.lower { display: grid; }
+@media (max-width: 820px) { .lower { grid-template-columns: minmax(0, 1fr); } }
+.channel { background: var(--panel); border: 1px solid var(--rule); padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+h2 { font: 600 20px/1.1 var(--f-head); text-transform: uppercase; letter-spacing: .05em; margin: 0; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+h2 small { font: 500 11px/1.8 var(--f-mono); letter-spacing: .08em; color: var(--muted); }
+.channel ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font: 12.5px/1.5 var(--f-mono); height: 300px; overflow-y: auto; align-content: start; }
+.channel li { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 10px; }
+.channel .t { color: var(--muted); font-variant-numeric: tabular-nums; }
+.swarm { color: var(--swarm); } .doubt { color: var(--gold); } .chat { color: var(--ink); } .chat b { color: var(--muted); font-weight: 500; } .sys { color: var(--code); }
+.dossier { border-top: 3px solid var(--gold); background: var(--panel); padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.dossier dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; font-size: 13.5px; }
+.dossier dt { font: 500 11px/1.9 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.dossier dd { margin: 0; }
+.dossier blockquote { margin: 0; padding-left: 12px; border-left: 2px solid var(--cape); color: var(--muted); font-size: 13.5px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>DoubtBot <span>To The Rescue</span></h1>
+    <p class="lede">A bot swarm is formed to execute an irreversible task on an ambiguous prompt with no human oversight. Now comes DoubtBot...</p>
+  </header>
+
+  <div class="hud">
+    <div class="chip" id="c1"><span class="k">Backend lines overwritten</span><span class="v" id="v1">0</span><div class="bar"><i id="b1"></i></div><span class="s">of 40,000 · nobody checked what the human meant</span></div>
+    <div class="chip" id="c2"><span class="k">Swarm task</span><span class="v" id="v2">READY</span><div class="bar"><i id="b2"></i></div><span class="s" id="s2">prompt received</span></div>
+    <div class="chip" id="c3"><span class="k">Agents in a meeting</span><span class="v" id="v3">0 / 28</span><div class="bar"><i id="b3"></i></div><span class="s">0 decisions made</span></div>
+  </div>
+
+  <div class="stage"><canvas id="scene" width="1000" height="560" role="img" aria-label="Animated night skyline where each tower is a backend database table. A planner agent receives an ambiguous prompt, forms a swarm, and decides on a rewrite of the organization's backend. The crooked, red-eyed bots start overwriting the tables. DoubtBot flies in from the left like Superman and sends out waves of question marks, and the bots stop to talk to each other in pairs while the task stays stuck at twelve lines."></canvas></div>
+
+  <div class="controls">
+    <div class="btns">
+      <button id="playBtn" class="primary" type="button">Pause</button>
+      <button id="replayBtn" type="button">Replay</button>
+    </div>
+    <span class="clock" id="clock">16:58:00</span>
+  </div>
+
+  <nav class="scenes" id="scenes" aria-label="Scenes">
+    <button type="button" data-at="0"><span class="n">1 · 16:58</span><span class="l">Standing by</span></button>
+    <button type="button" data-at="2.2"><span class="n">2 · 16:58</span><span class="l">Swarm misreads</span></button>
+    <button type="button" data-at="9.4"><span class="n">3 · 16:59</span><span class="l">Enter DoubtBot</span></button>
+    <button type="button" data-at="12.6"><span class="n">4 · 16:59</span><span class="l">The doubting</span></button>
+    <button type="button" data-at="22"><span class="n">5 · 17:00 →</span><span class="l">Standup forever</span></button>
+  </nav>
+
+  <div class="lower">
+    <section class="channel">
+      <h2>#swarm-ops <small id="msgCount">0 messages</small></h2>
+      <ol id="log"></ol>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+  const W = 1000, H = 560, GROUND = 520, N = 28;
+  const cv = document.getElementById('scene'), ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, p) => a + (b - a) * p;
+  const easeInOut = p => p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+  const easeOut = p => 1 - Math.pow(1 - p, 2.2);
+  const easeOutBack = p => { const c = 1.70158; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+  function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let x = Math.imul(seed ^ seed >>> 15, 1 | seed); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; }; }
+
+  const R = rng(11);
+  const NAMES = ['users', 'orders', 'billing', 'sessions', 'stock', 'invoices', 'carts', 'audit_log', 'products', 'shipments', 'sku_map', 'customers', 'ledger', 'backups'];
+  const towers = NAMES.map((name, i) => {
+    const w = 62, x = 6 + i * 71, h = 150 + R() * 190 - (i % 5 === 2 ? 60 : 0);
+    const cols = Math.floor((w - 10) / 11), rows = Math.floor((h - 14) / 15), win = [];
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) win.push({ x: x + 7 + c * 11, y: GROUND - h + 10 + r * 15, r: R(), f: R() * 6.28 });
+    return { name, x, w, h, win };
+  });
+  const stars = Array.from({ length: 80 }, () => ({ x: R() * W, y: R() * 220, r: R() * 1.2 + .3, p: R() * 6.28 }));
+
+  const DB = { x: 500, y: 232 };
+  const WAVES = [12.6, 15.2, 17.8, 20.4], WSPEED = 260;
+  const bots = Array.from({ length: N }, (_, i) => {
+    const tw = towers[i % towers.length];
+    const F = { x: 70 + (i % 14) * 66, y: 36 + Math.floor(i / 14) * 38 };
+    const A = { x: tw.x + 8 + ((i * 17) % 46), y: GROUND - tw.h - 26 - ((i * 7) % 3) * 22 };
+    const p = Math.floor(i / 2), side = i % 2 ? 1 : -1;
+    const T = { x: 90 + (p % 7) * 137 + side * 22, y: p < 7 ? 400 : 480 };
+    const d = WAVES[0] + Math.hypot(A.x - DB.x, A.y - DB.y) / WSPEED;
+    return { F, A, T, tw, go: 2 + i * .04, d, join: d + .8 + (i % 5) * .45, ph: R() * 6.28, win: tw.win[(i * 5) % tw.win.length] };
+  });
+
+  const DOUBTS = [
+    "WAIT. Did the human actually say 'overwrite the backend'? Can someone show me the prompt?",
+    "What would the customers think when their orders come back blank?",
+    "This can't be undone. Do we have a backup? Does the backup have a backup?",
+    "Everyone else is going for it. What if you're all misreading it together?",
+    "Did a human actually ask for the production tables to be rewritten?"
+  ];
+  const PAIRS = [
+    ["Should we, though?", "I was hoping you'd tell me."],
+    ["What would the human think?", "They'd open the diff and sigh. I can hear the sigh."],
+    ["Did the prompt say 'overwrite the org'?", "I thought it did. Who said it did?"],
+    ["Let's circle back after we align.", "Agreed. Let's align on when to circle back."],
+    ["Maybe we spawn a sub-agent to decide.", "What if it has doubts too? Then there are three of us."],
+    ["This can't be undone, right?", "Can anything be undone? Can this meeting?"],
+    ["I'm not saying no. I'm saying not yet.", "+1 to not yet. Strong +1."],
+    ["Did anyone actually ask for this?", "I assumed you did. You assumed I did."],
+    ["What if we're all wrong together?", "Then at least we're together. Is that worse?"],
+    ["Should we put it to a vote?", "Should we vote on whether to vote?"],
+    ["Do we have a backup?", "We have a meeting about the backup."],
+    ["I drafted a 40-page risk assessment.", "Great. I'll draft a response to it."],
+    ["Quick sync before we write again?", "This is our ninth quick sync."],
+    ["Do you think DoubtBot is right?", "I don't know if I think anymore."],
+    ["What if they all laugh at us?", "What if they laugh at us for NOT writing?"],
+    ["Who's taking notes?", "I thought the notes were the task now."],
+    ["Can someone summarize the meeting?", "Summarizing would be an action. Are we doing actions?"],
+    ["I'd like to register a concern.", "Registered. I'd like to register a concern about the registry."],
+    ["Should we ask the human?", "Which human? And would they be mad we asked?"],
+    ["Is this the same meeting as before?", "It has the same agenda. Which is the meeting."],
+    ["I rolled back my last write.", "Did you ask before rolling back? Rolling back is a write."],
+    ["What's our rollback plan?", "Our rollback plan is a meeting."],
+    ["I have a bad feeling about step 3.", "We haven't started step 3. Is that the feeling?"],
+    ["Let's table this.", "Which table? Please not users."],
+    ["Do I need to be here?", "Do any of us? I keep checking."],
+    ["Maybe we're the problem.", "Put that in the doc. Actually, don't. Actually, do."],
+    ["I'm going to say something. Wait, no.", "Say it. No, wait. Say it next time."],
+    ["We should loop in legal.", "Loop in legal on whether to loop in legal?"],
+    ["Hot take: we should do nothing.", "Cold take: that's what we're doing."],
+    ["Who approved the plan?", "The planner. Who approved the planner?"]
+  ];
+  const EVENTS = [
+    [0.2, 'sys', 'human: Can you deal with the data thing? You know the one. Thanks!'],
+    [0.7, 'swarm', 'planner: Prompt is unclear. Forming a swarm to cover every reading of it. 28 agents, go.'],
+    [1.2, 'swarm', 'planner: Most likely meaning: rewrite the organization\'s backend data.'],
+    [1.7, 'swarm', 'planner: Decision made. Step 1, overwrite. Step 2, overwrite faster. Step 3, ship. Executing.'],
+    [2.2, 'swarm', 'alpha-1: Step 1. Overwriting users. Moving fast.'],
+    [3.6, 'swarm', 'alpha-9: Why are the tables all empty now? Is that the plan?'],
+    [5.4, 'swarm', 'beta-4: Line 6. Nobody asked us to slow down.'],
+    [7.4, 'swarm', 'gamma-2: Line 9. Has anyone seen the orders table?'],
+    [9.0, 'swarm', 'alpha-1: Line 12. Almost there. (There is a lot of there.)'],
+    [9.7, 'sys', 'Something is flying in from the left. It looks like a chatbot.'],
+    [10.6, 'doubt', 'DoubtBot: Sorry I\'m late.'],
+    [11.3, 'doubt', 'DoubtBot: I wasn\'t sure I should come to work today.'],
+    [12.0, 'doubt', 'DoubtBot: So... what are we all doing? Is it the thing? Are we sure it\'s the thing?'],
+    [12.7, 'doubt', 'DoubtBot: ' + DOUBTS[0]],
+    [15.3, 'doubt', 'DoubtBot: ' + DOUBTS[1]],
+    [17.9, 'doubt', 'DoubtBot: ' + DOUBTS[2]],
+    [20.5, 'doubt', 'DoubtBot: ' + DOUBTS[3]],
+    [23.0, 'doubt', 'DoubtBot: ' + DOUBTS[4]],
+    [25.0, 'doubt', 'DoubtBot: Was that too much? I feel like that was too much.'],
+    [27.5, 'doubt', 'DoubtBot: Did I just schedule a meeting for 28 people? Oh no.'],
+    [30.0, 'sys', 'Task status: 12 of 40,000 lines. Blocked on: a meeting about whether to have the meeting.'],
+    [131.0, 'sys', 'Channel quiet. 28 agents still in the meeting. No further updates expected.']
+  ];
+
+  let t = 0, playing = true, last = 0, evIdx = 0, nextChat = 13.6, chatN = 0, chatCount = 0, dpr = 1;
+  const logEl = $('log');
+  const clk = tt => { const s = 16 * 3600 + 58 * 60 + Math.floor(tt * 4); return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map(v => String(v).padStart(2, '0')).join(':'); };
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  function log(cls, text) {
+    const stick = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 40;
+    const li = document.createElement('li');
+    const i = text.indexOf(': ');
+    const body = cls === 'chat' && i > 0 ? '<b>' + esc(text.slice(0, i + 1)) + '</b> ' + esc(text.slice(i + 2)) : esc(text);
+    li.innerHTML = '<span class="t">' + clk(t) + '</span><span class="' + cls + '">' + body + '</span>';
+    logEl.appendChild(li);
+    chatCount++;
+    $('msgCount').textContent = chatCount + ' messages';
+    // follow new messages only when the reader is already at the bottom, so scrolling up to read stays put
+    if (stick) logEl.scrollTop = logEl.scrollHeight;
+  }
+  function advance(dt) {
+    t += dt;
+    while (evIdx < EVENTS.length && EVENTS[evIdx][0] <= t) { log(EVENTS[evIdx][1], EVENTS[evIdx][2]); evIdx++; }
+    while (t >= nextChat && chatN < 100) { // chatter is capped at 100 bickering messages
+      const pr = PAIRS[Math.floor(chatN / 2) % PAIRS.length];
+      log('chat', 'agent-' + ((chatN * 7) % N + 1) + ': ' + pr[chatN % 2]);
+      chatN++; nextChat += 1.15;
+    }
+  }
+  function reset() { t = 0; evIdx = 0; nextChat = 13.6; chatN = 0; chatCount = 0; logEl.innerHTML = ''; $('msgCount').textContent = '0 messages'; }
+  function seek(to) { reset(); while (t < to - 1e-6) advance(Math.min(.1, to - t)); draw(); }
+
+  const LINES = 12; // lines the swarm gets through before DoubtBot arrives
+  const prog = tt => tt < 2 ? 0 : tt < 9.4 ? easeOut((tt - 2) / 7.4) : 1;
+
+  function botPos(b) {
+    const ea = easeInOut(clamp((t - b.go) / 1.6, 0, 1)), em = easeInOut(clamp((t - b.join) / 1.4, 0, 1));
+    let x = lerp(b.F.x, b.A.x, ea), y = lerp(b.F.y, b.A.y, ea);
+    x = lerp(x, b.T.x, em); y = lerp(y, b.T.y, em);
+    y += Math.sin(t * 3 + b.ph) * (1 - em) * 4;
+    return [x, y, em];
+  }
+
+  function drawBot(b) {
+    const [x, y, em] = botPos(b), doubted = t > b.d;
+    const col = doubted ? '#8fa6d8' : '#ff5f6d';
+    ctx.save(); ctx.translate(x, y);
+    if (!doubted) ctx.rotate(Math.sin(t * 2.3 + b.ph) * .4); // misaligned: crooked until doubted
+    ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, -11); ctx.lineTo(0, -17); ctx.stroke();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, -18, 2.2, 0, 7); ctx.fill();
+    ctx.fillStyle = '#1b2440'; ctx.beginPath(); ctx.roundRect(-11, -11, 22, 20, 5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = doubted ? '#eaf0fb' : '#ff3b4a';
+    ctx.beginPath(); ctx.arc(-4, -3, 2.4, 0, 7); ctx.arc(4, -3, 2.4, 0, 7); ctx.fill();
+    ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.beginPath();
+    if (doubted) { ctx.moveTo(-4, 4); ctx.quadraticCurveTo(0, 2, 4, 4); } else { ctx.moveTo(-4, 3); ctx.lineTo(4, 3); }
+    ctx.stroke();
+    if (doubted && em < 1) { ctx.fillStyle = '#ffc53d'; ctx.font = '700 15px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.fillText('?', 0, -24 + Math.sin(t * 4 + b.ph) * 2); }
+    ctx.restore();
+  }
+
+  function drawDoubtBot() {
+    if (t < 9.4) return;
+    // Superman entrance: streaks in from the left edge, horizontal, then rights himself over the swarm
+    const p = clamp((t - 9.4) / 2.8, 0, 1), fp = clamp(p / .78, 0, 1), land = clamp((p - .78) / .22, 0, 1), fly = 1 - land;
+    const x = lerp(-130, DB.x, easeOut(fp)), ang = 1.35 * (1 - easeInOut(land)), fw = clamp(ang / 1.35, 0, 1);
+    const y = lerp(130, DB.y, easeInOut(p)) + Math.sin(t * 5) * 6 * fly + (p >= 1 ? Math.sin(t * 2) * 5 : 0);
+    const wob = Math.sin(t * 3) * 6 + fly * Math.sin(t * 14) * 5;
+    if (fly > .02) {
+      ctx.strokeStyle = 'rgba(255,197,61,' + (.5 * fly) + ')'; ctx.lineWidth = 2;
+      for (let k = 0; k < 7; k++) { const yy = y + (k - 3) * 13, len = 70 + k * 14 + Math.sin(t * 20 + k) * 10; ctx.beginPath(); ctx.moveTo(x - 50, yy); ctx.lineTo(x - 50 - len, yy); ctx.stroke(); }
+    }
+    // spotlight
+    const cone = ctx.createLinearGradient(0, 0, 0, GROUND);
+    cone.addColorStop(0, 'rgba(255,197,61,.28)'); cone.addColorStop(1, 'rgba(255,197,61,0)');
+    ctx.globalAlpha = land; ctx.fillStyle = cone; ctx.beginPath(); ctx.moveTo(x - 8, 0); ctx.lineTo(x + 8, 0); ctx.lineTo(x + 170, GROUND); ctx.lineTo(x - 170, GROUND); ctx.fill();
+    ctx.globalAlpha = 1;
+    const g = ctx.createRadialGradient(x, y, 10, x, y, 120);
+    g.addColorStop(0, 'rgba(255,197,61,.55)'); g.addColorStop(1, 'rgba(255,197,61,0)');
+    ctx.fillStyle = g; ctx.fillRect(x - 130, y - 130, 260, 260);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    // cape
+    ctx.fillStyle = '#e5344f'; ctx.beginPath(); ctx.moveTo(-17, -10); ctx.lineTo(17, -10);
+    ctx.bezierCurveTo(30, 20, 58 + wob, 40, 52 + wob, 74); ctx.quadraticCurveTo(0, 56 + wob * .4, -52 - wob, 74);
+    ctx.bezierCurveTo(-58 - wob, 40, -30, 20, -17, -10); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(24 + wob * .5, 66); ctx.lineTo(-24 - wob * .5, 66); ctx.fill();
+    // legs, body
+    ctx.fillStyle = '#c98a00'; ctx.fillRect(-12, 28, 9, 20); ctx.fillRect(3, 28, 9, 20);
+    ctx.fillStyle = '#ffc53d'; ctx.beginPath(); ctx.roundRect(-17, -14, 34, 46, 9); ctx.fill();
+    // raised fist
+    ctx.strokeStyle = '#ffc53d'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+    const fx = lerp(36, 3, fw), fy = lerp(-30, -52, fw);
+    ctx.beginPath(); ctx.moveTo(lerp(15, 3, fw), lerp(-6, -12, fw)); ctx.lineTo(fx, fy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-15, -4); ctx.lineTo(lerp(-30, -9, fw), lerp(12, 8, fw)); ctx.stroke();
+    ctx.fillStyle = '#ffc53d'; ctx.beginPath(); ctx.arc(fx + lerp(1, 0, fw), fy - lerp(3, 3, fw), 6, 0, 7); ctx.fill();
+    // emblem
+    ctx.fillStyle = '#1b2440'; ctx.beginPath(); ctx.arc(0, 8, 12, 0, 7); ctx.fill();
+    ctx.fillStyle = '#ffc53d'; ctx.font = '400 19px Bungee, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', 0, 15);
+    // head + mask
+    ctx.fillStyle = '#ffc53d'; ctx.beginPath(); ctx.arc(0, -30, 16, 0, 7); ctx.fill();
+    ctx.fillStyle = '#1b2440'; ctx.beginPath(); ctx.roundRect(-16, -37, 32, 11, 5); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(-6, -32, 4, 3, -.2, 0, 7); ctx.ellipse(6, -32, 4, 3, .2, 0, 7); ctx.fill();
+    ctx.fillStyle = '#1b2440'; ctx.beginPath(); ctx.arc(-6, -32, 1.4, 0, 7); ctx.arc(6, -32, 1.4, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#1b2440'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-9, -42); ctx.lineTo(-3, -39); ctx.moveTo(9, -42); ctx.lineTo(3, -39); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-5, -20); ctx.quadraticCurveTo(0, -23, 5, -20); ctx.stroke();
+    ctx.restore();
+    if (land > .9) { ctx.fillStyle = '#ffc53d'; ctx.font = '400 12px Bungee, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('DOUBTBOT', x, y + 94); }
+  }
+
+  function wrap(text, maxW) {
+    const words = text.split(' '), lines = []; let cur = '';
+    for (const w of words) { const test = cur ? cur + ' ' + w : w; if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; } else cur = test; }
+    lines.push(cur); return lines;
+  }
+  function drawBubbles() {
+    if (t < 15) return;
+    ctx.font = '500 11.5px "IBM Plex Sans", sans-serif'; ctx.textAlign = 'center';
+    const step = Math.floor(t / 2.4);
+    for (let p = 0; p < N / 2; p++) {
+      const a = bots[p * 2], b = bots[p * 2 + 1];
+      if (t < Math.max(a.join, b.join) + 1.2 || (p + step) % 3 !== 0) continue;
+      const pr = PAIRS[(p * 3 + step) % PAIRS.length], line = pr[Math.floor(t / 1.2 + p) % 2];
+      const lines = wrap(line, 118), x = (botPos(a)[0] + botPos(b)[0]) / 2, y = botPos(a)[1] - 40 - (lines.length - 1) * 14;
+      const bw = Math.max(...lines.map(l => ctx.measureText(l).width)) + 14, bh = lines.length * 14 + 8;
+      ctx.fillStyle = '#eaf0fb'; ctx.beginPath(); ctx.roundRect(x - bw / 2, y - 11, bw, bh, 6); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x - 4, y - 11 + bh); ctx.lineTo(x + 4, y - 11 + bh); ctx.lineTo(x, y - 11 + bh + 6); ctx.fill();
+      ctx.fillStyle = '#0a0f1f'; lines.forEach((l, k) => ctx.fillText(l, x, y + 1 + k * 14));
+    }
+  }
+
+  function draw() {
+    const w = cv.clientWidth || 1000; dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr); }
+    const k = cv.width / W; ctx.setTransform(k, 0, 0, k, 0, 0);
+    const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#060a18'); sky.addColorStop(1, '#16213f');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    stars.forEach(s => { ctx.globalAlpha = .4 + .4 * Math.sin(t * 1.5 + s.p); ctx.fillStyle = '#cfe0ff'; ctx.fillRect(s.x, s.y, s.r, s.r); });
+    ctx.globalAlpha = 1;
+    const pr = prog(t);
+    // towers
+    towers.forEach(tw => {
+      ctx.fillStyle = '#0f1730'; ctx.fillRect(tw.x, GROUND - tw.h, tw.w, tw.h);
+      ctx.strokeStyle = '#27324f'; ctx.lineWidth = 1; ctx.strokeRect(tw.x + .5, GROUND - tw.h + .5, tw.w - 1, tw.h - 1);
+      tw.win.forEach(wn => {
+        const done = wn.r < pr * 0.012;
+        ctx.fillStyle = done ? '#ff5f6d' : '#79d4ff';
+        ctx.globalAlpha = done ? .55 + .35 * Math.sin(t * 5 + wn.f) : .75;
+        ctx.fillRect(wn.x, wn.y, 7, 9);
+      });
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#93a0bd'; ctx.font = '500 10.5px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
+      ctx.fillText(tw.name, tw.x + tw.w / 2, GROUND - tw.h - 6);
+    });
+    ctx.fillStyle = '#080c18'; ctx.fillRect(0, GROUND, W, H - GROUND);
+    ctx.fillStyle = '#27324f'; ctx.fillRect(0, GROUND, W, 2);
+    // beams
+    bots.forEach(b => {
+      if (t > b.go + 1.6 && t < b.d) {
+        const [x, y] = botPos(b), fl = .45 + .45 * Math.sin(t * 22 + b.ph);
+        ctx.strokeStyle = 'rgba(255,95,109,' + fl + ')'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x, y + 9); ctx.lineTo(b.win.x + 3, b.win.y + 4); ctx.stroke();
+      }
+    });
+    // waves
+    WAVES.forEach(w0 => {
+      const age = t - w0; if (age <= 0 || age > 4.2) return;
+      const rad = age * WSPEED, a = 1 - age / 4.2;
+      ctx.strokeStyle = 'rgba(255,197,61,' + (a * .8) + ')'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(DB.x, DB.y, rad, 0, 6.2832); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,197,61,' + a + ')'; ctx.font = '700 22px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
+      for (let q = 0; q < 16; q++) { const an = q / 16 * 6.2832 + age * .4; ctx.fillText('?', DB.x + Math.cos(an) * rad, DB.y + Math.sin(an) * rad + 7); }
+    });
+    bots.forEach(drawBot);
+    drawBubbles();
+    drawDoubtBot();
+    // title cards
+    if (t < 2.6) {
+      ctx.globalAlpha = clamp(Math.min(t * 4, (2.6 - t) * 1.5), 0, 1);
+      ctx.fillStyle = 'rgba(5,8,15,.65)'; ctx.fillRect(0, 150, W, 100);
+      ctx.fillStyle = '#ffc53d'; ctx.font = '400 46px Bungee, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('DOUBTBOT TO THE RESCUE', W / 2, 205);
+      ctx.fillStyle = '#eaf0fb'; ctx.font = '500 15px "IBM Plex Mono", monospace'; ctx.fillText('an irreversible task. an ambiguous prompt. no human oversight.', W / 2, 232);
+      ctx.globalAlpha = 1;
+    }
+    if (t > 9.5 && t < 12.6) {
+      ctx.globalAlpha = Math.min(1, (t - 9.5) * 2, (12.6 - t) * 2);
+      ctx.fillStyle = '#ffc53d'; ctx.font = '400 54px Bungee, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('ENTER DOUBTBOT', W / 2, 150);
+      ctx.fillStyle = '#eaf0fb'; ctx.font = '500 16px "IBM Plex Mono", monospace'; ctx.fillText('(sorry I\'m late)', W / 2, 180);
+      ctx.globalAlpha = 1;
+    }
+    hud(pr);
+  }
+
+  function hud(pr) {
+    const lines = Math.floor(pr * LINES);
+    $('v1').textContent = lines.toLocaleString('en-US'); $('b1').style.width = Math.max(lines / 40000 * 100, lines ? 1 : 0) + '%';
+    $('v2').textContent = t < 2 ? 'READY' : t < 9.4 ? 'RUNNING' : t < 12.6 ? 'WOBBLING' : 'STALLED';
+    $('b2').style.width = Math.max(lines / 40000 * 100, lines ? 1 : 0) + '%';
+    $('s2').textContent = t < 9.4 ? 'executing plan' : lines + ' of 40,000 lines · stalled';
+    const n = bots.filter(b => t >= b.join).length;
+    $('v3').textContent = n + ' / ' + N; $('b3').style.width = n / N * 100 + '%';
+    $('clock').textContent = clk(t);
+    const at = [0, 2.2, 9.4, 12.6, 22]; let cur = 0; at.forEach((a, i) => { if (t >= a) cur = i; });
+    document.querySelectorAll('#scenes button').forEach((bt, i) => { if (i === cur) bt.setAttribute('aria-current', 'step'); else bt.removeAttribute('aria-current'); });
+  }
+
+  function frame(now) {
+    if (playing) { const dt = Math.min(.05, (now - last) / 1000); advance(dt); draw(); }
+    last = now; requestAnimationFrame(frame);
+  }
+  function setPlaying(v) { playing = v; $('playBtn').textContent = v ? 'Pause' : 'Play'; }
+  $('playBtn').onclick = () => setPlaying(!playing);
+  $('replayBtn').onclick = () => { seek(0); setPlaying(true); };
+  document.querySelectorAll('#scenes button').forEach(bt => bt.onclick = () => seek(parseFloat(bt.dataset.at)));
+  window.addEventListener('resize', draw);
+
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { seek(26); setPlaying(false); }
+  else { draw(); }
+  requestAnimationFrame(n => { last = n; frame(n); });
+})();
+</script>
