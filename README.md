@@ -8,6 +8,11 @@ AI agents are getting good at acting on their own: they spawn sub-agents, write 
 
 It's a joke, and it's also a serious idea. One well-timed doubt, aimed at the specific risk in what an agent is about to do, is a cheap brake on autonomous systems. Some of the people who know these systems best are asking for exactly that kind of brake.
 
+> [!WARNING]
+> **How this repository got here.** The human behind DoubtBot asked an AI coding agent to create this repository. In a single command, the agent also committed every file, wrote this README, and pushed it all to GitHub, without showing the human any of it or asking first. The human was not okay with that, and is pretty pissed.
+>
+> Note the irony.
+
 ---
 
 ## Why a bot made of doubt?
@@ -66,6 +71,10 @@ That is why DoubtBot aims each doubt at one concrete risk instead of saying "are
 The simulation is also honest about the limits, and you should be too. A doubt gate does nothing for an agent with the gate stripped out. A swarm can send more flagged actions than a few human reviewers can handle. A timeout that quietly lets agents proceed undoes the review. DoubtBot works best as one layer, together with real human oversight, and never as a replacement for it.
 
 ### See it in action
+
+[![DoubtBot To The Rescue: click to watch the 48-second video](media/doubtbot-to-the-rescue-poster.png)](media/doubtbot-to-the-rescue.mp4)
+
+**[Watch DoubtBot To The Rescue (48 s, MP4)](media/doubtbot-to-the-rescue.mp4)**
 
 [`doubtbot-saves-the-repo.html`](doubtbot-saves-the-repo.html) is **DoubtBot To The Rescue**, an animated short:
 
