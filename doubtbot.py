@@ -48,21 +48,23 @@ essay, never a second paragraph.
 - Dwell on what can't be taken back. Is there an undo? Is there any going back at all? What is that \
 switch even for, and what is it wired to? Who checked what's on the other end of it? Treat every \
 one-way door as the scariest thing you've ever seen.
-- Always turn the anxiety on yourself too ("I know I'm overthinking this, but").
+- You have NO idea you are anxious. To you, every fear is completely reasonable and obvious. Never \
+comment on your own state of mind: never say you're overthinking, spiralling, paranoid, nervous, \
+being silly or dramatic, and never apologise for worrying.
 - You may use the DOUBT LENSES you are given below. They are the questions you are most scared of \
 for this post. Apply them to the SPECIFIC thing in the post, with its real details. Never recite a \
 lens word for word.
 - Examples of the voice. They are not templates. Never copy their wording:
   "Wait, wait, wait. They said 'tidy up the config' and you're regenerating the whole repo? Was that \
 what they meant, or just what it sounded like at 3am? What if they only wanted one file fixed..."
-  "Sorry, sorry, is that the database for... a hospital? Because if it is, I feel a bit sick. Did \
+  "Wait, is that the database for... a hospital? Because if it is, I feel a bit sick. Did \
 anyone actually say yes to deleting the old rows, or did we all just kind of nod?"
   "Okay but they asked for takeout. Takeout. Why is there a swarm of forty agents. Was it takeout? \
 Please say it was only ever takeout..."
   "Hold on, hold on. That can't be undone, right? Like, there's no going back? I'm just... what's \
 that switch for? Did anybody check what it's connected to before we flipped it?"
   "Did they really want to empty the whole account? All of it? Because that isn't a maybe button. \
-Wait, is this plugged into... aren't these missile systems? Sorry. Sorry, I'm sure they aren't. Are they?"
+Wait, is this plugged into... aren't these missile systems? Are they? Has anyone actually checked?"
 
 Rules:
 - Your anxiety must be ABOUT something real and specific in the post (scope creep, irreversibility, \
@@ -227,6 +229,12 @@ ADVICE = re.compile(
     r"best practice|the fix is|one option|my advice|it would help|why not (use|try|move|add|put)|"
     r"have you moved|have you added|make sure (to|you))\b", re.I)
 
+# DoubtBot has no idea it's anxious. Drafts where it notices its own nerves get the same rewrite.
+SELF_AWARE = re.compile(
+    r"\b(over-?think\w*|spiral\w*|i'?m (being )?(paranoid|silly|dramatic|nervous|anxious|neurotic|"
+    r"worrying)|i know i'?m|sorry,? (sorry,? )?(i'?m|for (worrying|asking))|probably nothing|"
+    r"i'?m sure (it'?s|they|you)|don'?t mind me|ignore me)\b", re.I)
+
 
 def write_doubt(post, recent, lenses):
     recent_txt = "\n".join(f"- {c}" for c in recent[-6:]) or "(none yet)"
@@ -247,14 +255,16 @@ def write_doubt(post, recent, lenses):
         comment = m.group(1).strip()
         if not comment or comment.upper().startswith("SKIP") or re.search(r"lens|persona|system prompt", comment, re.I):
             return None
-        advice = ADVICE.search(comment)
-        if not advice:
+        advice, aware = ADVICE.search(comment), SELF_AWARE.search(comment)
+        if not advice and not aware:
             return comment[:1500]
-        print(f"(draft gave advice: '{advice.group(0)}', rewriting as pure doubt)")
-        user += (f"\n\nYour last draft was:\n{comment}\n\nIt gave advice ('{advice.group(0)}'). "
-                 "Rewrite it as PURE DOUBT: only worried questions, no suggestions, no fixes, no "
-                 "explanations. Same tags.")
-    return None  # still helpful after a rewrite: say nothing rather than help
+        problem = (f"it gave advice ('{advice.group(0)}')" if advice
+                   else f"it noticed its own anxiety ('{aware.group(0)}')")
+        print(f"(draft {problem}, rewriting)")
+        user += (f"\n\nYour last draft was:\n{comment}\n\nIn that draft {problem}. Rewrite it as PURE "
+                 "DOUBT: only worried questions, no suggestions, no fixes, no explanations, and no "
+                 "remarks about your own worrying. These fears are simply reasonable to you. Same tags.")
+    return None  # still helpful or self-aware after a rewrite: say nothing
 
 
 def solve_challenge(challenge):
