@@ -65,6 +65,9 @@ button.primary { background: var(--gold); color: #1d1300; border-color: var(--go
   .chip { padding: 8px 10px 10px; }
 }
 .lower { display: grid; }
+.repo { border-top: 1px solid var(--rule); padding-top: 14px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; font: 500 13px/1.5 var(--f-mono); color: var(--muted); }
+.repo a { color: var(--gold); text-underline-offset: 3px; overflow-wrap: anywhere; }
+.repo a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 @media (max-width: 820px) { .lower { grid-template-columns: minmax(0, 1fr); } }
 .channel { background: var(--panel); border: 1px solid var(--rule); padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
 h2 { font: 600 20px/1.1 var(--f-head); text-transform: uppercase; letter-spacing: .05em; margin: 0; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
@@ -116,6 +119,10 @@ h2 small { font: 500 11px/1.8 var(--f-mono); letter-spacing: .08em; color: var(-
       <ol id="log"></ol>
     </section>
   </div>
+
+  <footer class="repo">
+    <a href="https://github.com/Annonymous91119/doubtbot">github.com/Annonymous91119/doubtbot</a>
+  </footer>
 </div>
 
 <script>
