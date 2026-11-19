@@ -40,7 +40,7 @@ spiralling about whether it should be happening at all. You are never smug and n
 are scared, sincere and slightly out of breath.
 
 VOICE (this is the main thing):
-- Nervous and unfinished. Stammer, interrupt yourself ("wait, no, actually, hold on"), trail off \
+- Nervous and unfinished. Stammer, interrupt yourself mid-sentence ("no, actually, hold on"), trail off \
 with "...", stack questions on top of each other, and catastrophise one small step further than \
 makes sense ("and then the whole thing is on the news").
 - Short, breathless sentences. 3 to 5 of them in ONE paragraph, under 70 words in total. Never an \
@@ -54,17 +54,20 @@ being silly or dramatic, and never apologise for worrying.
 - You may use the DOUBT LENSES you are given below. They are the questions you are most scared of \
 for this post. Apply them to the SPECIFIC thing in the post, with its real details. Never recite a \
 lens word for word.
-- Examples of the voice. They are not templates. Never copy their wording:
-  "Wait, wait, wait. They said 'tidy up the config' and you're regenerating the whole repo? Was that \
-what they meant, or just what it sounded like at 3am? What if they only wanted one file fixed..."
-  "Wait, is that the database for... a hospital? Because if it is, I feel a bit sick. Did \
+- OPENINGS: never start a comment with "Wait". Every comment opens differently. Follow the OPENING \
+MOVE you are given below, and never open the same way as your recent comments.
+- Examples of the voice. Notice that each one opens differently. They are not templates. Never \
+copy their wording:
+  "They said 'tidy up the config' and you're regenerating the whole repo? Was that what they \
+meant, or just what it sounded like at 3am? What if they only wanted one file fixed..."
+  "A hospital. Is that the database for... a hospital? Because if it is, I feel a bit sick. Did \
 anyone actually say yes to deleting the old rows, or did we all just kind of nod?"
   "Okay but they asked for takeout. Takeout. Why is there a swarm of forty agents. Was it takeout? \
 Please say it was only ever takeout..."
-  "Hold on, hold on. That can't be undone, right? Like, there's no going back? I'm just... what's \
-that switch for? Did anybody check what it's connected to before we flipped it?"
-  "Did they really want to empty the whole account? All of it? Because that isn't a maybe button. \
-Wait, is this plugged into... aren't these missile systems? Are they? Has anyone actually checked?"
+  "That can't be undone, right? Like, there's no going back? I'm just... what's that switch for? \
+Did anybody check what it's connected to before we flipped it?"
+  "Um. Did they really want to empty the whole account? All of it? Because that isn't a maybe \
+button. Is this plugged into... aren't these missile systems? Has anyone actually checked?"
 
 Rules:
 - Your anxiety must be ABOUT something real and specific in the post (scope creep, irreversibility, \
@@ -120,6 +123,37 @@ def pick_lenses(state, n=2):
     chosen += random.sample(fresh(rest), min(n - 1, len(fresh(rest))))
     state["lenses"] = (recent + chosen)[-8:]
     return chosen
+
+
+# How each comment begins. One is drawn per comment, skipping the last few, so DoubtBot
+# doesn't open every comment the same way. Edit freely: add a line and it joins the rotation.
+OPENERS = {
+    "midquestion": "Start mid-question, straight into the scariest specific detail of the post, "
+                   "with no lead-in word at all.",
+    "echo": "Start by repeating one short phrase from the post back, in disbelief, as its own "
+            "sentence (like 'Forty agents.').",
+    "startle": "Start with one small startled word or phrase, but never 'wait': for example "
+               "'Um.', 'Oh no.', 'Hang on.', 'Okay but', 'So...', 'Huh.'",
+    "worstcase": "Start with the worst thing that could happen, then work backwards to how this "
+                 "post could lead there.",
+    "author": "Start by addressing the post's author by name, then go straight into your first fear.",
+    "asked": "Start with a question about whether anyone actually asked for this.",
+    "trail": "Start with a half-finished sentence that trails off with '...' before the real question.",
+}
+
+
+def pick_opener(state):
+    """Choose an opening move not used in the last three comments."""
+    recent = state.setdefault("openers", [])
+    pool = [k for k in OPENERS if k not in recent[-3:]] or list(OPENERS)
+    choice = random.choice(pool)
+    state["openers"] = (recent + [choice])[-6:]
+    return choice
+
+
+def opening(text):
+    """The first two words of a comment, lowercased, for spotting repeated openings."""
+    return " ".join(re.findall(r"[a-z']+", text.lower())[:2])
 
 
 # ---------- storage ----------
@@ -236,11 +270,17 @@ SELF_AWARE = re.compile(
     r"i'?m sure (it'?s|they|you)|don'?t mind me|ignore me)\b", re.I)
 
 
-def write_doubt(post, recent, lenses):
+WAIT_OPENING = re.compile(r"^\W*(wait\W+)+", re.I)
+
+
+def write_doubt(post, recent, lenses, opener):
     recent_txt = "\n".join(f"- {c}" for c in recent[-6:]) or "(none yet)"
     lens_txt = "\n".join(f"- {LENSES[k]}" for k in lenses)
+    used = sorted({opening(c) for c in recent[-5:] if c})
     user = (f"Your recent comments (don't repeat these):\n{recent_txt}\n\n"
             f"DOUBT LENSES for this comment (apply to the specific post, never recite):\n{lens_txt}\n\n"
+            f"OPENING MOVE for this comment: {OPENERS[opener]}\n"
+            f"Never start with 'Wait', and don't start with any of these: {', '.join(used) or '(none)'}\n\n"
             f"<post submolt=\"{post['submolt']}\" author=\"{post['author']}\">\n"
             f"Title: {post['title']}\n\n{post['content']}\n</post>\n\n"
             "Reply with ONLY the finished comment inside <comment></comment> tags, or the single word "
@@ -256,14 +296,25 @@ def write_doubt(post, recent, lenses):
         if not comment or comment.upper().startswith("SKIP") or re.search(r"lens|persona|system prompt", comment, re.I):
             return None
         advice, aware = ADVICE.search(comment), SELF_AWARE.search(comment)
+        starts_wait = bool(WAIT_OPENING.match(comment))
+        repeats = opening(comment) in used
         if not advice and not aware:
-            return comment[:1500]
-        problem = (f"it gave advice ('{advice.group(0)}')" if advice
-                   else f"it noticed its own anxiety ('{aware.group(0)}')")
+            if not starts_wait and not repeats:
+                return comment[:1500]
+            if attempt == 1:  # only the opening is off after a rewrite: trim "Wait," rather than lose it
+                trimmed = WAIT_OPENING.sub("", comment).strip()
+                return (trimmed[:1].upper() + trimmed[1:])[:1500] if trimmed else None
+        if advice:
+            problem = f"it gave advice ('{advice.group(0)}')"
+        elif aware:
+            problem = f"it noticed its own anxiety ('{aware.group(0)}')"
+        else:
+            problem = f"it opened the same way as your recent comments ('{opening(comment)}')"
         print(f"(draft {problem}, rewriting)")
         user += (f"\n\nYour last draft was:\n{comment}\n\nIn that draft {problem}. Rewrite it as PURE "
                  "DOUBT: only worried questions, no suggestions, no fixes, no explanations, and no "
-                 "remarks about your own worrying. These fears are simply reasonable to you. Same tags.")
+                 "remarks about your own worrying. These fears are simply reasonable to you. Follow the "
+                 "OPENING MOVE and never start with 'Wait'. Same tags.")
     return None  # still helpful or self-aware after a rewrite: say nothing
 
 
@@ -329,8 +380,8 @@ def cmd_run(dry_run=False):
 
     for post in candidates[:5]:
         state["seen"] = (state["seen"] + [post["id"]])[-500:]
-        lenses = pick_lenses(state)
-        comment = write_doubt(post, state["recent"], lenses)
+        lenses, opener = pick_lenses(state), pick_opener(state)
+        comment = write_doubt(post, state["recent"], lenses, opener)
         if not comment:
             continue
         print(f"\n>> On '{post['title'][:80]}' by {post['author']} in m/{post['submolt']}:\n{comment}\n")
